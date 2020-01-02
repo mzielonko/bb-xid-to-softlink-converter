@@ -3,6 +3,7 @@ import os, re
 import getopt, sys
 
 version = "1.0"
+verbose = False
 
 localFolderStructure = rootLocalFolder = fullLocalFolder = None
 webFolderStructure = rootWebFolder = None
@@ -39,13 +40,14 @@ def parseArgs():
     global rootDir
     global courseAddr
     global noWrite
+    global verbose
 
 
     cmdArgs = sys.argv
     argumentList = cmdArgs[1:]
     print(argumentList)
-    unixOptions = "f:w:hn"
-    gnuOptions = ["fileRootPath=", "webRootPath=", "noWrite" "help"]
+    unixOptions = "f:w:hnv"
+    gnuOptions = ["fileRootPath=", "webRootPath=", "noWrite", "help", "verbose"]
 
     try:
         arguments, values = getopt.getopt(argumentList, unixOptions, gnuOptions)
@@ -69,6 +71,9 @@ def parseArgs():
         elif arg in ("-n", "--noWrite"):
             print("Not writing changes to files (test run)")
             noWrite = True
+        elif arg in ("-v", "--verbose"):
+            print("Verbose mode activated")
+            verbose = True
 
     # TODO remove default choices
     # rootDir = "C:\\Users\\MZielonko\\Documents\\Github\\Physics 40S D2L"
@@ -93,16 +98,22 @@ def showHelpMsg():
     print("Description:\nScans the entire folder structure of a local directory (fileRootPath) for HTML files. Checks each file for links that rely on Blackboard's XID system, finds their course-based path, and inserts a relative link to the same file based on the html file's location. This outcome allows courses to be exported to most LMS platforms and not rely on Blackboard-specific notations and lookup protocols.")
 
 def parsePaths():
-        webFolderStructure, rootWebFolder = os.path.split(courseAddr)
-        if rootWebFolder == "": # if ends in a slash (as folders are often written), goes one further level
-            webFolderStructure, rootWebFolder = os.path.split(webFolderStructure)
-        print("Root web folder: %s" %(rootWebFolder))
+    global webFolderStructure
+    global rootWebFolder
+    global localFolderStructure
+    global rootLocalFolder
+    global fullLocalFolder
 
-        localFolderStructure, rootLocalFolder = os.path.split(rootDir)
-        if (rootLocalFolder == ""): # same as rootWebFolder
-            localFolderStructure, rootLocalFolder = os.path.split(localFolderStructure)
-        print("Root local folder: %s" %(rootLocalFolder))
-        fullLocalFolder = os.path.join(localFolderStructure, rootLocalFolder)
+    webFolderStructure, rootWebFolder = os.path.split(courseAddr)
+    if rootWebFolder == "": # if ends in a slash (as folders are often written), goes one further level
+        webFolderStructure, rootWebFolder = os.path.split(webFolderStructure)
+    print("Root web folder: %s" %(rootWebFolder))
+
+    localFolderStructure, rootLocalFolder = os.path.split(rootDir)
+    if (rootLocalFolder == ""): # same as rootWebFolder
+        localFolderStructure, rootLocalFolder = os.path.split(localFolderStructure)
+    print("Root local folder: %s" %(rootLocalFolder))
+    fullLocalFolder = os.path.join(localFolderStructure, rootLocalFolder)
 
 def getFilePathLevel(fileName):
      # removes the first folder name
@@ -166,10 +177,11 @@ def getPathComponents(folderStructure):
 
 def searchFile(fileName):
 
+    if (verbose)
+        print("SEARCHING: %s" % (fileName))
     file = open(fileName, "rt", encoding="utf-8")
     try:
         contents = file.read()
-        # print(contents)
     except UnicodeEncodeError as e:
         print("\tERROR WRITING FILE: " + fileName)
         print(e)
@@ -181,15 +193,19 @@ def searchFile(fileName):
 
     xid = re.search("/bbcswebdav/xid-[0-9_]*", contents)
     while (xid):
-        print("\tFOUND: %s (%s)" % (xid, fileName))
+        if (verbose):
+            print("\tFOUND: %s (%s)" % (xid, fileName))
         replaceStartIndex = xid.span()[0]
         replaceEndIndex = xid.span()[1]
 
         # look up the real link
         xidLink = "xid" + xid.group(0).split("xid")[1]
-        print("\t\tSEARCHING FOR XID: %s" % (xidLink))
+        print("\t\tSEARCHING FOR XID: %s" % (webDavPrefix + xidLink))
         linkResp = requests.get(webDavPrefix + xidLink, allow_redirects=False)
 
+        if linkResp.status_code == 404:
+            print("ERROR: Link %s cannot be found. Please check file %s manually and re-run once all XID links can be found, or remove manually.")
+            return False
         # compare the relative file's path to the resulting link, only print necessary piece
         # print(linkResp.status_code)
         # print(linkResp.headers.get("location"))
@@ -201,17 +217,17 @@ def searchFile(fileName):
          # check again
         xid = re.search("/bbcswebdav/xid-[0-9_]*", contents)
 
-    file = open(fileName, "wt", encoding="utf-8")
-    try:
-        if not noWrite:
+    if not noWrite:
+        file = open(fileName, "wt", encoding="utf-8")
+        try:
             file.write(contents)
-    except UnicodeEncodeError as e:
-        print("\tERROR WRITING FILE: " + fileName)
-        print(e)
-    except UnicodeDecodeError as e:
-        print("\tERROR READING FILE: " + fileName)
-        print(e)
-    finally:
-        file.close()
+        except UnicodeEncodeError as e:
+            print("\tERROR WRITING FILE: " + fileName)
+            print(e)
+        except UnicodeDecodeError as e:
+            print("\tERROR READING FILE: " + fileName)
+            print(e)
+        finally:
+            file.close()
 
 main()
