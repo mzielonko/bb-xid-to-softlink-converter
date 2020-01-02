@@ -2,59 +2,22 @@ import requests
 import os, re
 import getopt, sys
 
-rootDir, courseAddr = None
+version = "1.0"
 
-cmdArgs = sys.argv
-argumentList = cmdArgs[1:]
-print(argumentList)
-unixOptions = "f:w:h"
-gnuOptions = ["fileRootPath=", "webRootPath=", "help"]
-
-try:
-    arguments, values = getopt.getopt(argumentList, unixOptions, gnuOptions)
-except getopt.error as error:
-    print(str(error))
-    sys.exit(-1);
-
-# Set values given by user
-for arg, val in arguments:
-    if arg in ("-f", "--fileRootPath"):
-        rootDir = str(val)
-    elif arg in ("-w", "--webRootPath"):
-        courseAddr = str(val)
-    elif arg in ("-h", "--help"):
-        showHelpMsg()
-        sys.exit(0)
-
-# Dummy checks
-if rootDir == None:
-    error("Please specify a --fileRootPath (-f) and try again")
-    sys.exit(-2)
-if (courseAddr == None):
-    error("Please specify a --webRootPath (-w) and try again")
-    sys.exit(-3)
+localFolderStructure = rootLocalFolder = fullLocalFolder = None
+webFolderStructure = rootWebFolder = None
+rootDir = courseAddr = None
+noWrite = False
 
 webDavPrefix = "https://bblearn.merlin.mb.ca/bbcswebdav/"
-rootDir = "C:\\Users\\MZielonko\\Documents\\Github\\Physics 40S D2L"
 
-courseAddr = "https://bblearn.merlin.mb.ca/bbcswebdav/courses/Physics40S_master_08"
-webFolderStructure, rootWebFolder = os.path.split(courseAddr)
-if rootWebFolder == "": # if ends in a slash (as folders are often written), goes one further level
-    webFolderStructure, rootWebFolder = os.path.split(webFolderStructure)
-print("Root web folder: %s" %(rootWebFolder))
-
-localFolderStructure, rootLocalFolder = os.path.split(rootDir)
-if (rootLocalFolder == ""): # same as rootWebFolder
-    localFolderStructure, rootLocalFolder = os.path.split(localFolderStructure)
-print("Root local folder: %s" %(rootLocalFolder))
-fullLocalFolder = os.path.join(localFolderStructure, rootLocalFolder)
 
 def main():
 
-    # webpage = "https://bblearn.merlin.mb.ca/webapps/blackboard/execute/displayLearningUnit?content_id=_8456658_1&course_id=_12330_1&mode=view&framesetWrapped=true"
-    webpage = "https://bblearn.merlin.mb.ca/bbcswebdav/courses/Physics40S_master_08/course_content/module1/lesson1/intro.html"
-    picture = "https://bblearn.merlin.mb.ca/bbcswebdav/xid-4317862_1"
+    parseArgs()
+    parsePaths()
 
+    # TODO: Remove after testing
     sampleFile = "\\exampleFile.html"
     # searchFile(rootDir + sampleFile)
     # removeCommonPath(rootDir + sampleFile, "https://bblearn.merlin.mb.ca/bbcswebdav/courses/Physics40S_master_08/course_content/images/m1_icon.gif")
@@ -66,6 +29,80 @@ def main():
             if fname.endswith(".html"):
                 fullPath = str(os.path.join(dirName, fname))
                 searchFile(fullPath)
+
+def parseArgs():
+    global localFolderStructure
+    global rootLocalFolder
+    global fullLocalFolder
+    global webFolderStructure
+    global rootWebFolder
+    global rootDir
+    global courseAddr
+    global noWrite
+
+
+    cmdArgs = sys.argv
+    argumentList = cmdArgs[1:]
+    print(argumentList)
+    unixOptions = "f:w:hn"
+    gnuOptions = ["fileRootPath=", "webRootPath=", "noWrite" "help"]
+
+    try:
+        arguments, values = getopt.getopt(argumentList, unixOptions, gnuOptions)
+    except getopt.error as error:
+        print(str(error))
+        sys.exit(-1);
+
+    if (len(arguments) == 0):
+        showHelpMsg()
+        sys.exit(0)
+
+    # Set values given by user
+    for arg, val in arguments:
+        if arg in ("-f", "--fileRootPath"):
+            rootDir = str(val)
+        elif arg in ("-w", "--webRootPath"):
+            courseAddr = str(val)
+        elif arg in ("-h", "--help"):
+            showHelpMsg()
+            sys.exit(0)
+        elif arg in ("-n", "--noWrite"):
+            print("Not writing changes to files (test run)")
+            noWrite = True
+
+    # TODO remove default choices
+    # rootDir = "C:\\Users\\MZielonko\\Documents\\Github\\Physics 40S D2L"
+
+    # Dummy checks
+    print(rootDir)
+    if rootDir == None or not os.path.exists(rootDir):
+        print("Please specify a valid --fileRootPath (-f) and try again")
+        sys.exit(-2)
+    if (courseAddr == None):
+        print("Please specify a --webRootPath (-w) and try again")
+        sys.exit(-3)
+
+
+
+def showHelpMsg():
+    print("convert-xid version " + str(version))
+    print("-----------------------------------------------")
+    print('Usage: python convert-xid.py -f | --fileRootPath "C:/Users/.../RootFolderName" -w | --webRootPath "http://bblearn.merlin.mb.ca/bbcswebdav/courses/COURSENAMEHERE"')
+    print("Where: \n\tfileRootPath: On computer system, uppermost folder that is used for storage when downloading a course")
+    print("\twebRootPath: Path of course on the webserver (you can copy this directly from Blackboard, located under the heading \"Current Web Address\")\n")
+    print("Description:\nScans the entire folder structure of a local directory (fileRootPath) for HTML files. Checks each file for links that rely on Blackboard's XID system, finds their course-based path, and inserts a relative link to the same file based on the html file's location. This outcome allows courses to be exported to most LMS platforms and not rely on Blackboard-specific notations and lookup protocols.")
+
+def parsePaths():
+        webFolderStructure, rootWebFolder = os.path.split(courseAddr)
+        if rootWebFolder == "": # if ends in a slash (as folders are often written), goes one further level
+            webFolderStructure, rootWebFolder = os.path.split(webFolderStructure)
+        print("Root web folder: %s" %(rootWebFolder))
+
+        localFolderStructure, rootLocalFolder = os.path.split(rootDir)
+        if (rootLocalFolder == ""): # same as rootWebFolder
+            localFolderStructure, rootLocalFolder = os.path.split(localFolderStructure)
+        print("Root local folder: %s" %(rootLocalFolder))
+        fullLocalFolder = os.path.join(localFolderStructure, rootLocalFolder)
 
 def getFilePathLevel(fileName):
      # removes the first folder name
@@ -166,7 +203,8 @@ def searchFile(fileName):
 
     file = open(fileName, "wt", encoding="utf-8")
     try:
-        file.write(contents)
+        if not noWrite:
+            file.write(contents)
     except UnicodeEncodeError as e:
         print("\tERROR WRITING FILE: " + fileName)
         print(e)
@@ -175,7 +213,5 @@ def searchFile(fileName):
         print(e)
     finally:
         file.close()
-
-
 
 main()
