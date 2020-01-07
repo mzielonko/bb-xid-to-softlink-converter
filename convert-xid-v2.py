@@ -2,7 +2,7 @@ import requests
 import os, re
 import getopt, sys
 
-version = "1.2"
+version = "1.3.1"
 verbose = False
 
 localFolderStructure = rootLocalFolder = fullLocalFolder = None
@@ -198,7 +198,7 @@ def searchFile(fileName):
         linkResp = requests.get(webDavPrefix + xidLink, allow_redirects=False)
 
         if linkResp.status_code == 404:
-            print("ERROR: Link %s cannot be found. Please check file %s manually and re-run once all XID links can be found, or remove manually.")
+            print("ERROR: Link %s cannot be found. Please check file %s manually and re-run once all XID links can be found, or remove manually." % (webDavPrefix + xidLink, fileName))
             return False
         # compare the relative file's path to the resulting link, only print necessary piece
         # print(linkResp.status_code)
