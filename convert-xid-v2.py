@@ -2,7 +2,7 @@ import requests
 import os, re
 import getopt, sys
 
-version = "1.0"
+version = "1.2"
 verbose = False
 
 localFolderStructure = rootLocalFolder = fullLocalFolder = None
@@ -131,8 +131,6 @@ def removeCommonPath(fileName, linkAddr):
     # get rid of anything further than the root folders
     fileComponents = getPathComponents(fileName)
     linkComponents = getPathComponents(linkAddr)
-    # print(fileComponents)
-    # print(linkComponents)
 
     # remove anything preceding and including the root folder address
     relevantFileComps = fileComponents[fileComponents.index(rootLocalFolder) + 1 : ]
@@ -142,16 +140,11 @@ def removeCommonPath(fileName, linkAddr):
         relevantFileComps = relevantFileComps[1:]
         relevantWebComps = relevantWebComps[1:]
 
-    #TODO put back into url form
-
     return [relevantFileComps, relevantWebComps]
 
 def getRelativePath(basis, link):
     basisPath, linkPath = removeCommonPath(basis, link)
     relativePath = ""
-
-    # print(basisPath)
-    # print(linkPath)
 
     while True:
         # if we're working in the folder's level
@@ -177,8 +170,7 @@ def getPathComponents(folderStructure):
 
 def searchFile(fileName):
 
-    if (verbose)
-        print("SEARCHING: %s" % (fileName))
+    print("\tSEARCHING: %s" % (fileName))
     file = open(fileName, "rt", encoding="utf-8")
     try:
         contents = file.read()
@@ -191,7 +183,8 @@ def searchFile(fileName):
     finally:
         file.close()
 
-    xid = re.search("/bbcswebdav/xid-[0-9_]*", contents)
+    regexLinkFind = "(http(s)?://bblearn.merlin.mb.ca)?/bbcswebdav/xid-[0-9_]*"
+    xid = re.search(regexLinkFind, contents)
     while (xid):
         if (verbose):
             print("\tFOUND: %s (%s)" % (xid, fileName))
@@ -200,7 +193,8 @@ def searchFile(fileName):
 
         # look up the real link
         xidLink = "xid" + xid.group(0).split("xid")[1]
-        print("\t\tSEARCHING FOR XID: %s" % (webDavPrefix + xidLink))
+        if verbose:
+            print("\t\tSEARCHING FOR XID: %s" % (webDavPrefix + xidLink))
         linkResp = requests.get(webDavPrefix + xidLink, allow_redirects=False)
 
         if linkResp.status_code == 404:
@@ -211,11 +205,15 @@ def searchFile(fileName):
         # print(linkResp.headers.get("location"))
 
         newLink = getRelativePath(fileName, linkResp.headers.get("location"))
-        print("\t\tOLD: %s\tNEW: %s" %(linkResp.headers.get("location"), newLink))
+        if verbose:
+            print("\t\tOLD: %s\tNEW: %s" %(linkResp.headers.get("location"), newLink))
+
+        if not verbose:
+            print("\t\tFOUND: %s\t NEW: %s" %(webDavPrefix + xidLink, newLink))
 
         contents = contents[ :replaceStartIndex]  + newLink + contents[replaceEndIndex: ]
          # check again
-        xid = re.search("/bbcswebdav/xid-[0-9_]*", contents)
+        xid = re.search(regexLinkFind, contents)
 
     if not noWrite:
         file = open(fileName, "wt", encoding="utf-8")
