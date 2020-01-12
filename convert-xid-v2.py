@@ -2,8 +2,9 @@ import requests
 import os, re
 import getopt, sys
 
-version = "1.3.1"
+version = "1.3.2"
 verbose = False
+debug = False
 
 localFolderStructure = rootLocalFolder = fullLocalFolder = None
 webFolderStructure = rootWebFolder = None
@@ -46,8 +47,8 @@ def parseArgs():
     cmdArgs = sys.argv
     argumentList = cmdArgs[1:]
     print(argumentList)
-    unixOptions = "f:w:hnv"
-    gnuOptions = ["fileRootPath=", "webRootPath=", "noWrite", "help", "verbose"]
+    unixOptions = "f:w:hnvd"
+    gnuOptions = ["fileRootPath=", "webRootPath=", "noWrite", "help", "verbose", "debug"]
 
     try:
         arguments, values = getopt.getopt(argumentList, unixOptions, gnuOptions)
@@ -74,6 +75,9 @@ def parseArgs():
         elif arg in ("-v", "--verbose"):
             print("Verbose mode activated")
             verbose = True
+        elif arg in ("-d", "--debug"):
+            print("Debug mode activated")
+            debug = True
 
     # TODO remove default choices
     # rootDir = "C:\\Users\\MZielonko\\Documents\\Github\\Physics 40S D2L"
@@ -92,9 +96,13 @@ def parseArgs():
 def showHelpMsg():
     print("convert-xid version " + str(version))
     print("-----------------------------------------------")
-    print('Usage: python convert-xid.py -f | --fileRootPath "C:/Users/.../RootFolderName" -w | --webRootPath "http://bblearn.merlin.mb.ca/bbcswebdav/courses/COURSENAMEHERE"')
+    print('Usage: python convert-xid.py -f | --fileRootPath "C:/Users/.../RootFolderName" -w | --webRootPath "http://bblearn.merlin.mb.ca/bbcswebdav/courses/COURSENAMEHERE" [-n | --noWrite] [-v | --verbose] [-d | --debug]')
     print("Where: \n\tfileRootPath: On computer system, uppermost folder that is used for storage when downloading a course")
     print("\twebRootPath: Path of course on the webserver (you can copy this directly from Blackboard, located under the heading \"Current Web Address\")\n")
+    print("\tnoWrite: Files are opened and scanned, but changes are not written back to files (will not check if your file is available for writing either)")
+    print("\tverbose: Changes are listed in more detail in the output window")
+    print("\tdebug: More information is provided in function ")
+    print()
     print("Description:\nScans the entire folder structure of a local directory (fileRootPath) for HTML files. Checks each file for links that rely on Blackboard's XID system, finds their course-based path, and inserts a relative link to the same file based on the html file's location. This outcome allows courses to be exported to most LMS platforms and not rely on Blackboard-specific notations and lookup protocols.")
 
 def parsePaths():
@@ -127,10 +135,20 @@ def getFilePathLevel(fileName):
 
     return pathLevel
 
+'''
+    Removes pieces that are common to both paths (traces back to closest ancestor)
+    @param fileName file on local system (full path)
+    @param linkAddr identifcal file's location through the webdav address
+'''
 def removeCommonPath(fileName, linkAddr):
+    if verbose:
+        print("removeCommonPath: %s %s" % (fileName, linkAddr))
     # get rid of anything further than the root folders
     fileComponents = getPathComponents(fileName)
     linkComponents = getPathComponents(linkAddr)
+
+    if verbose:
+        print("fileComponents: ")
 
     # remove anything preceding and including the root folder address
     relevantFileComps = fileComponents[fileComponents.index(rootLocalFolder) + 1 : ]
