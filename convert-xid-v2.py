@@ -18,6 +18,7 @@ def main():
 
     parseArgs()
     parsePaths()
+    print("-"*50)
 
     # TODO: Remove after testing
     sampleFile = "\\exampleFile.html"
@@ -46,7 +47,8 @@ def parseArgs():
 
     cmdArgs = sys.argv
     argumentList = cmdArgs[1:]
-    print(argumentList)
+    if verbose:
+        print("Arguments: ", argumentList)
     unixOptions = "f:w:hnvd"
     gnuOptions = ["fileRootPath=", "webRootPath=", "noWrite", "help", "verbose", "debug"]
 
@@ -70,27 +72,27 @@ def parseArgs():
             showHelpMsg()
             sys.exit(0)
         elif arg in ("-n", "--noWrite"):
-            print("Not writing changes to files (test run)")
+            print("NOWRITE: Not writing changes to files (test run)")
             noWrite = True
         elif arg in ("-v", "--verbose"):
-            print("Verbose mode activated")
+            print("VERBOSE: Verbose mode activated")
             verbose = True
         elif arg in ("-d", "--debug"):
-            print("Debug mode activated")
+            print("DEBUG: Debug mode activated")
             debug = True
 
     # TODO remove default choices
     # rootDir = "C:\\Users\\MZielonko\\Documents\\Github\\Physics 40S D2L"
 
     # Dummy checks
-    print(rootDir)
+    if debug:
+        print("File Root Path:", rootDir)
     if rootDir == None or not os.path.exists(rootDir):
         print("Please specify a valid --fileRootPath (-f) and try again")
         sys.exit(-2)
     if (courseAddr == None):
         print("Please specify a --webRootPath (-w) and try again")
         sys.exit(-3)
-
 
 
 def showHelpMsg():
