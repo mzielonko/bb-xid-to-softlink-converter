@@ -2,6 +2,7 @@ Blackboard XID to Softlink Converter
 ------------------------------------
 
 >Version: 1.3.x
+>
 >Author: Mark Zielonko
 
 Description: Python script used for replacing all of a selected course's XID
