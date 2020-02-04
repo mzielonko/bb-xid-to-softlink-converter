@@ -2,7 +2,7 @@ import requests
 import os, re
 import getopt, sys
 
-version = "1.3.2"
+version = "1.3.4"
 verbose = False
 debug = False
 
@@ -33,6 +33,7 @@ def main():
                 fullPath = str(os.path.join(dirName, fname))
                 searchFile(fullPath)
 
+
 def parseArgs():
     global localFolderStructure
     global rootLocalFolder
@@ -43,7 +44,6 @@ def parseArgs():
     global courseAddr
     global noWrite
     global verbose
-
 
     cmdArgs = sys.argv
     argumentList = cmdArgs[1:]
@@ -56,7 +56,7 @@ def parseArgs():
         arguments, values = getopt.getopt(argumentList, unixOptions, gnuOptions)
     except getopt.error as error:
         print(str(error))
-        sys.exit(-1);
+        sys.exit(-1)
 
     if (len(arguments) == 0):
         showHelpMsg()
@@ -81,9 +81,6 @@ def parseArgs():
             print("DEBUG: Debug mode activated")
             debug = True
 
-    # TODO remove default choices
-    # rootDir = "C:\\Users\\MZielonko\\Documents\\Github\\Physics 40S D2L"
-
     # Dummy checks
     if debug:
         print("File Root Path:", rootDir)
@@ -107,6 +104,7 @@ def showHelpMsg():
     print()
     print("Description:\nScans the entire folder structure of a local directory (fileRootPath) for HTML files. Checks each file for links that rely on Blackboard's XID system, finds their course-based path, and inserts a relative link to the same file based on the html file's location. This outcome allows courses to be exported to most LMS platforms and not rely on Blackboard-specific notations and lookup protocols.")
 
+
 def parsePaths():
     global webFolderStructure
     global rootWebFolder
@@ -115,18 +113,19 @@ def parsePaths():
     global fullLocalFolder
 
     webFolderStructure, rootWebFolder = os.path.split(courseAddr)
-    if rootWebFolder == "": # if ends in a slash (as folders are often written), goes one further level
+    if rootWebFolder == "":     # if ends in a slash (as folders are often written), goes one further level
         webFolderStructure, rootWebFolder = os.path.split(webFolderStructure)
     print("Root web folder: %s" %(rootWebFolder))
 
     localFolderStructure, rootLocalFolder = os.path.split(rootDir)
-    if (rootLocalFolder == ""): # same as rootWebFolder
+    if (rootLocalFolder == ""):     # same as rootWebFolder
         localFolderStructure, rootLocalFolder = os.path.split(localFolderStructure)
     print("Root local folder: %s" %(rootLocalFolder))
     fullLocalFolder = os.path.join(localFolderStructure, rootLocalFolder)
 
+
 def getFilePathLevel(fileName):
-     # removes the first folder name
+    # removes the first folder name
     relPath = os.path.relpath(fileName, fullLocalFolder)
     travPath, tempName = os.path.split(relPath)
     pathLevel = 0
@@ -137,20 +136,37 @@ def getFilePathLevel(fileName):
 
     return pathLevel
 
+
 '''
     Removes pieces that are common to both paths (traces back to closest ancestor)
     @param fileName file on local system (full path)
     @param linkAddr identifcal file's location through the webdav address
 '''
 def removeCommonPath(fileName, linkAddr):
+    global rootWebFolder
+
     if verbose:
         print("removeCommonPath: %s %s" % (fileName, linkAddr))
     # get rid of anything further than the root folders
     fileComponents = getPathComponents(fileName)
     linkComponents = getPathComponents(linkAddr)
 
-    if verbose:
-        print("fileComponents: ")
+    try:
+        linkComponents.index(rootWebFolder)
+
+    # if the web folder can't be found inside the full web path
+    except ValueError:
+        newRootWebFolder = linkComponents[linkComponents.index("bbcswebdav") + 2]
+
+        print("-"*50)
+        print(
+            """WARNING:\n\tThe redirect given by the server doesn't seem to reference the same course name.
+            Expected: %s\t\tGot: %s
+        This can happen if the course's name was manually changed after its creation.
+        Trying to use %s instead\n""" % (rootWebFolder, newRootWebFolder, newRootWebFolder))
+        print("-"*50)
+        # set the global root web folder to the presumed folder
+        rootWebFolder = newRootWebFolder
 
     # remove anything preceding and including the root folder address
     relevantFileComps = fileComponents[fileComponents.index(rootLocalFolder) + 1 : ]
@@ -161,6 +177,7 @@ def removeCommonPath(fileName, linkAddr):
         relevantWebComps = relevantWebComps[1:]
 
     return [relevantFileComps, relevantWebComps]
+
 
 def getRelativePath(basis, link):
     basisPath, linkPath = removeCommonPath(basis, link)
@@ -178,6 +195,7 @@ def getRelativePath(basis, link):
 
     return relativePath
 
+
 def getPathComponents(folderStructure):
     tempFolderStructure = "" + folderStructure
     folders = []
@@ -187,6 +205,7 @@ def getPathComponents(folderStructure):
         tempFolderStructure, tempFolder = os.path.split(tempFolderStructure)
 
     return folders
+
 
 def searchFile(fileName):
 
