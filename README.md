@@ -19,12 +19,12 @@ Allowing existing courses to be converted into courses that are not
   - internet connection with no proxy (or results may vary/fail altogether)
 
 ## Usage instructions:
-  *\<C:\\path\\to\\python\\\>*python *\<C:\\path\\to\\script\\\>* convert-xid.py --fileRootPath *\<path to course stored on HDD\>* --webRootPath *<webdav address for course>*
+  <em>\<C:\\path\\to\\python\\\></em>**python** *\<C:\\path\\to\\script\\\>* **convert-xid.py --fileRootPath** *\<path to course stored on HDD\>* **--webRootPath** *\<webdav address for course\>*
 
   - optional arguments after the previous line:
-    --debug         Shows certain information that could be beneficial for debugging
-    --verbose       Shows additional information for each replacement
-    --noWrite       Leaves the course untouched but looks through all of the html pages and identifies broken paths (and writes log)
+    - **--debug**        Shows certain information that could be beneficial for debugging
+    - **--verbose**     Shows additional information for each replacement
+    - **--noWrite**       Leaves the course untouched but looks through all of the html pages and identifies broken paths (and writes log)
   - Note that path to python is optional if the path is part of your "path variable". The example assumes that python is in your
     path. Please see the following for more information: https://geek-university.com/python/add-python-to-the-windows-path/
 
