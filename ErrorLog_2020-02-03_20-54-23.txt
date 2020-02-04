@@ -1,0 +1,6 @@
+Files that could not be completed due to links with redirect errors:
+====================================================================
+
+C:\Users\MZielonko\Documents\Github\Physics-40S\teachernotes\assign_keys\Module 1\m1_l2_akey.html
+	https://bblearn.merlin.mb.ca/bbcswebdav/xid-4318868_1
+
